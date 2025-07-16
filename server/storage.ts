@@ -4,6 +4,8 @@ import {
   type InsertPerson, type InsertRating, type InsertComment, 
   type InsertCommentVote, type InsertFaceMashComparison 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, asc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // People
@@ -43,88 +45,65 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
-  private people: Map<number, Person> = new Map();
-  private ratings: Map<number, Rating> = new Map();
-  private comments: Map<number, Comment> = new Map();
-  private commentVotes: Map<number, CommentVote> = new Map();
-  private faceMashComparisons: Map<number, FaceMashComparison> = new Map();
+export class DatabaseStorage implements IStorage {
   
-  private currentPersonId = 1;
-  private currentRatingId = 1;
-  private currentCommentId = 1;
-  private currentCommentVoteId = 1;
-  private currentComparisonId = 1;
-
   async createPerson(insertPerson: InsertPerson): Promise<Person> {
-    const person: Person = {
-      ...insertPerson,
-      id: this.currentPersonId++,
-      averageRating: 0,
-      totalRatings: 0,
-      totalComments: 0,
-      totalViews: 0,
-      faceMashWins: 0,
-      faceMashLosses: 0,
-      createdAt: new Date(),
-    };
-    this.people.set(person.id, person);
+    const [person] = await db
+      .insert(people)
+      .values(insertPerson)
+      .returning();
     return person;
   }
 
   async getPerson(id: number): Promise<Person | undefined> {
-    return this.people.get(id);
+    const [person] = await db.select().from(people).where(eq(people.id, id));
+    return person || undefined;
   }
 
   async getAllPeople(category?: string, sortBy = 'averageRating'): Promise<Person[]> {
-    let peopleArray = Array.from(this.people.values());
+    let baseQuery = db.select().from(people);
     
     if (category) {
-      peopleArray = peopleArray.filter(p => p.category === category);
+      baseQuery = baseQuery.where(eq(people.category, category));
     }
 
     switch (sortBy) {
       case 'averageRating':
-        peopleArray.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-        break;
+        return await baseQuery.orderBy(desc(people.averageRating));
       case 'newest':
-        peopleArray.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        break;
+        return await baseQuery.orderBy(desc(people.createdAt));
       case 'mostComments':
-        peopleArray.sort((a, b) => (b.totalComments || 0) - (a.totalComments || 0));
-        break;
+        return await baseQuery.orderBy(desc(people.totalComments));
       case 'faceMash':
-        peopleArray.sort((a, b) => (b.faceMashWins || 0) - (a.faceMashWins || 0));
-        break;
+        return await baseQuery.orderBy(desc(people.faceMashWins));
+      default:
+        return await baseQuery.orderBy(desc(people.averageRating));
     }
-
-    return peopleArray;
   }
 
   async updatePersonStats(id: number, stats: Partial<Person>): Promise<Person | undefined> {
-    const person = this.people.get(id);
-    if (!person) return undefined;
-
-    const updated = { ...person, ...stats };
-    this.people.set(id, updated);
-    return updated;
+    const [updated] = await db
+      .update(people)
+      .set(stats)
+      .where(eq(people.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async incrementPersonViews(id: number): Promise<void> {
-    const person = this.people.get(id);
-    if (person) {
-      person.totalViews = (person.totalViews || 0) + 1;
-      this.people.set(id, person);
-    }
+    await db
+      .update(people)
+      .set({ 
+        totalViews: sql`${people.totalViews} + 1`
+      })
+      .where(eq(people.id, id));
   }
 
   async createRating(insertRating: InsertRating): Promise<Rating> {
-    const rating: Rating = {
-      ...insertRating,
-      id: this.currentRatingId++,
-      createdAt: new Date(),
-    };
-    this.ratings.set(rating.id, rating);
+    const [rating] = await db
+      .insert(ratings)
+      .values(insertRating)
+      .returning();
 
     // Update person's average rating
     await this.updatePersonRatingStats(rating.personId);
@@ -133,13 +112,18 @@ export class MemStorage implements IStorage {
   }
 
   async getRatingsByPersonId(personId: number): Promise<Rating[]> {
-    return Array.from(this.ratings.values()).filter(r => r.personId === personId);
+    return await db.select().from(ratings).where(eq(ratings.personId, personId));
   }
 
   async hasUserRated(personId: number, sessionId: string): Promise<boolean> {
-    return Array.from(this.ratings.values()).some(
-      r => r.personId === personId && r.sessionId === sessionId
-    );
+    const result = await db
+      .select()
+      .from(ratings)
+      .where(
+        sql`${ratings.personId} = ${personId} AND ${ratings.sessionId} = ${sessionId}`
+      )
+      .limit(1);
+    return result.length > 0;
   }
 
   private async updatePersonRatingStats(personId: number): Promise<void> {
@@ -153,64 +137,54 @@ export class MemStorage implements IStorage {
   }
 
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const comment: Comment = {
-      ...insertComment,
-      id: this.currentCommentId++,
-      upvotes: 0,
-      downvotes: 0,
-      score: 0,
-      isBuried: false,
-      createdAt: new Date(),
-    };
-    this.comments.set(comment.id, comment);
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
 
     // Update person's comment count
-    const person = this.people.get(comment.personId);
-    if (person) {
-      person.totalComments = (person.totalComments || 0) + 1;
-      this.people.set(person.id, person);
-    }
+    await db
+      .update(people)
+      .set({ 
+        totalComments: sql`${people.totalComments} + 1`
+      })
+      .where(eq(people.id, comment.personId));
 
     return comment;
   }
 
   async getCommentsByPersonId(personId: number, sortBy = 'score'): Promise<Comment[]> {
-    let comments = Array.from(this.comments.values()).filter(c => c.personId === personId);
-    
+    const baseQuery = db.select().from(comments).where(eq(comments.personId, personId));
+
     switch (sortBy) {
       case 'score':
-        comments.sort((a, b) => (b.score || 0) - (a.score || 0));
-        break;
+        return await baseQuery.orderBy(desc(comments.score));
       case 'newest':
-        comments.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-        break;
+        return await baseQuery.orderBy(desc(comments.createdAt));
+      default:
+        return await baseQuery.orderBy(desc(comments.score));
     }
-
-    return comments;
   }
 
   async updateComment(id: number, updates: Partial<Comment>): Promise<Comment | undefined> {
-    const comment = this.comments.get(id);
-    if (!comment) return undefined;
-
-    const updated = { ...comment, ...updates };
-    
     // Check if comment should be buried (score < -5)
-    if (updated.score !== undefined && updated.score !== null && updated.score < -5) {
-      updated.isBuried = true;
+    if (updates.score !== undefined && updates.score !== null && updates.score < -5) {
+      updates.isBuried = true;
     }
 
-    this.comments.set(id, updated);
-    return updated;
+    const [updated] = await db
+      .update(comments)
+      .set(updates)
+      .where(eq(comments.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async createCommentVote(insertVote: InsertCommentVote): Promise<CommentVote> {
-    const vote: CommentVote = {
-      ...insertVote,
-      id: this.currentCommentVoteId++,
-      createdAt: new Date(),
-    };
-    this.commentVotes.set(vote.id, vote);
+    const [vote] = await db
+      .insert(commentVotes)
+      .values(insertVote)
+      .returning();
 
     // Update comment vote counts
     await this.updateCommentVoteStats(vote.commentId);
@@ -219,19 +193,29 @@ export class MemStorage implements IStorage {
   }
 
   async hasUserVotedOnComment(commentId: number, sessionId: string): Promise<boolean> {
-    return Array.from(this.commentVotes.values()).some(
-      v => v.commentId === commentId && v.sessionId === sessionId
-    );
+    const result = await db
+      .select()
+      .from(commentVotes)
+      .where(
+        sql`${commentVotes.commentId} = ${commentId} AND ${commentVotes.sessionId} = ${sessionId}`
+      )
+      .limit(1);
+    return result.length > 0;
   }
 
   async getCommentVote(commentId: number, sessionId: string): Promise<CommentVote | undefined> {
-    return Array.from(this.commentVotes.values()).find(
-      v => v.commentId === commentId && v.sessionId === sessionId
-    );
+    const [vote] = await db
+      .select()
+      .from(commentVotes)
+      .where(
+        sql`${commentVotes.commentId} = ${commentId} AND ${commentVotes.sessionId} = ${sessionId}`
+      )
+      .limit(1);
+    return vote || undefined;
   }
 
   private async updateCommentVoteStats(commentId: number): Promise<void> {
-    const votes = Array.from(this.commentVotes.values()).filter(v => v.commentId === commentId);
+    const votes = await db.select().from(commentVotes).where(eq(commentVotes.commentId, commentId));
     const upvotes = votes.filter(v => v.voteType === 'up').length;
     const downvotes = votes.filter(v => v.voteType === 'down').length;
     const score = upvotes - downvotes;
@@ -240,32 +224,31 @@ export class MemStorage implements IStorage {
   }
 
   async createFaceMashComparison(insertComparison: InsertFaceMashComparison): Promise<FaceMashComparison> {
-    const comparison: FaceMashComparison = {
-      ...insertComparison,
-      id: this.currentComparisonId++,
-      createdAt: new Date(),
-    };
-    this.faceMashComparisons.set(comparison.id, comparison);
+    const [comparison] = await db
+      .insert(faceMashComparisons)
+      .values(insertComparison)
+      .returning();
 
     // Update winner/loser stats
-    const winner = this.people.get(comparison.winnerId);
-    const loser = this.people.get(comparison.loserId);
+    await db
+      .update(people)
+      .set({ 
+        faceMashWins: sql`${people.faceMashWins} + 1`
+      })
+      .where(eq(people.id, comparison.winnerId));
     
-    if (winner) {
-      winner.faceMashWins = (winner.faceMashWins || 0) + 1;
-      this.people.set(winner.id, winner);
-    }
-    
-    if (loser) {
-      loser.faceMashLosses = (loser.faceMashLosses || 0) + 1;
-      this.people.set(loser.id, loser);
-    }
+    await db
+      .update(people)
+      .set({ 
+        faceMashLosses: sql`${people.faceMashLosses} + 1`
+      })
+      .where(eq(people.id, comparison.loserId));
 
     return comparison;
   }
 
   async getRandomPeopleForComparison(): Promise<[Person, Person] | null> {
-    const peopleArray = Array.from(this.people.values());
+    const peopleArray = await db.select().from(people);
     if (peopleArray.length < 2) return null;
 
     const shuffled = [...peopleArray].sort(() => Math.random() - 0.5);
@@ -273,15 +256,20 @@ export class MemStorage implements IStorage {
   }
 
   async getTopRankedPeople(limit = 10): Promise<Person[]> {
-    return (await this.getAllPeople()).slice(0, limit);
+    return await db
+      .select()
+      .from(people)
+      .orderBy(desc(people.averageRating))
+      .limit(limit);
   }
 
   async getWorstRankedPeople(limit = 10): Promise<Person[]> {
-    const people = await this.getAllPeople();
-    return people
-      .filter(p => (p.averageRating || 0) < 2)
-      .sort((a, b) => (a.averageRating || 0) - (b.averageRating || 0))
-      .slice(0, limit);
+    return await db
+      .select()
+      .from(people)
+      .where(sql`${people.averageRating} < 2`)
+      .orderBy(asc(people.averageRating))
+      .limit(limit);
   }
 
   async getTotalStats(): Promise<{
@@ -290,13 +278,17 @@ export class MemStorage implements IStorage {
     totalComments: number;
     onlineUsers: number;
   }> {
+    const [peopleCount] = await db.select({ count: sql<number>`count(*)` }).from(people);
+    const [ratingsCount] = await db.select({ count: sql<number>`count(*)` }).from(ratings);
+    const [commentsCount] = await db.select({ count: sql<number>`count(*)` }).from(comments);
+
     return {
-      totalPeople: this.people.size,
-      totalRatings: this.ratings.size,
-      totalComments: this.comments.size,
+      totalPeople: peopleCount.count,
+      totalRatings: ratingsCount.count,
+      totalComments: commentsCount.count,
       onlineUsers: Math.floor(Math.random() * 200) + 50, // Mock online users
     };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
