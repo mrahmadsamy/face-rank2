@@ -20,6 +20,8 @@ export default function AddPersonModal({ isOpen, onClose }: AddPersonModalProps)
     category: "",
     imageUrl: ""
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -29,19 +31,37 @@ export default function AddPersonModal({ isOpen, onClose }: AddPersonModalProps)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/people'] });
       toast({
-        title: "تم إضافة الشخص بنجاح! 🎉",
+        title: "تم إضافة الهدف بنجاح! 🎯",
         description: "الآن يمكن للجميع تقييمه والتعليق عليه"
       });
       handleClose();
     },
     onError: () => {
       toast({
-        title: "فشل في إضافة الشخص 😞",
+        title: "فشل في إضافة الهدف ❌",
         description: "تأكد من ملء جميع البيانات المطلوبة",
         variant: "destructive"
       });
     }
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      
+      // Convert to base64 for storage
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setFormData(prev => ({ ...prev, imageUrl: base64 }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +74,10 @@ export default function AddPersonModal({ isOpen, onClose }: AddPersonModalProps)
       return;
     }
 
-    const imageUrl = formData.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=1a1a1a&color=00d9ff&size=400`;
+    let imageUrl = formData.imageUrl;
+    if (!imageUrl) {
+      imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=1a1a1a&color=00d9ff&size=400`;
+    }
 
     createPersonMutation.mutate({
       ...formData,
@@ -64,86 +87,129 @@ export default function AddPersonModal({ isOpen, onClose }: AddPersonModalProps)
 
   const handleClose = () => {
     setFormData({ name: "", description: "", category: "", imageUrl: "" });
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl("");
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md bg-[#1a1a1a] border border-[#00D9FF]/30 text-white" dir="rtl">
+      <DialogContent className="w-[95vw] max-w-lg cyber-card border border-purple-500/50 text-white max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-[#00D9FF] text-xl font-bold">
-            إضافة شخص جديد للتقييم 👤
+          <DialogTitle className="gradient-cyber text-xl font-bold font-mono tracking-wider">
+            {"[+] إضافة هدف جديد للنظام"}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-bold mb-2 text-[#39FF14]">الاسم *</label>
+            <label className="block text-sm font-bold mb-2 text-cyan-400 font-mono">[NAME] اسم الهدف *</label>
             <Input
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="اكتب اسم الشخص..."
-              className="bg-[#333333] border-[#00D9FF]/30 focus:border-[#00D9FF] text-white"
+              placeholder=">> أدخل اسم الهدف..."
+              className="bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2 text-[#39FF14]">الوصف *</label>
+            <label className="block text-sm font-bold mb-2 text-cyan-400 font-mono">[DESC] وصف الهدف *</label>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="وصف ساخر أو جدي للشخص..."
-              className="bg-[#333333] border-[#00D9FF]/30 focus:border-[#00D9FF] text-white"
+              placeholder=">> تحليل شخصية الهدف..."
+              className="bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono"
               rows={3}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2 text-[#39FF14]">الفئة *</label>
+            <label className="block text-sm font-bold mb-2 text-cyan-400 font-mono">[CAT] تصنيف الهدف *</label>
             <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-              <SelectTrigger className="bg-[#333333] border-[#00D9FF]/30 focus:border-[#00D9FF] text-white">
-                <SelectValue placeholder="اختر فئة الشخص" />
+              <SelectTrigger className="bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono">
+                <SelectValue placeholder=">> اختر التصنيف" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1a1a] border-[#00D9FF]/30 text-white">
-                <SelectItem value="teacher">👨‍🏫 أستاذ</SelectItem>
-                <SelectItem value="student">🎓 طالب</SelectItem>
-                <SelectItem value="employee">💼 موظف</SelectItem>
-                <SelectItem value="celebrity">⭐ مشهور</SelectItem>
-                <SelectItem value="other">🤷‍♂️ أخرى</SelectItem>
+              <SelectContent className="cyber-card border-purple-500/50 text-white font-mono">
+                <SelectItem value="teacher">[EDU] أستاذ</SelectItem>
+                <SelectItem value="student">[STD] طالب</SelectItem>
+                <SelectItem value="employee">[EMP] موظف</SelectItem>
+                <SelectItem value="celebrity">[VIP] مشهور</SelectItem>
+                <SelectItem value="other">[???] غير محدد</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2 text-[#39FF14]">رابط الصورة (اختياري)</label>
-            <Input
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-              className="bg-[#333333] border-[#00D9FF]/30 focus:border-[#00D9FF] text-white"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              إذا تركت هذا الحقل فارغاً، سيتم إنشاء صورة تلقائية
-            </p>
+            <label className="block text-sm font-bold mb-2 text-cyan-400 font-mono">[IMG] رفع صورة الهدف</label>
+            
+            <div className="space-y-3">
+              {/* File input */}
+              <div className="cyber-border rounded-lg p-4 transition-all duration-200 hover-cyber">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-sm text-purple-400 font-mono
+                    file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 
+                    file:bg-purple-600/20 file:text-purple-400 file:font-mono file:text-sm 
+                    hover:file:bg-purple-600/30 file:transition-all file:cursor-pointer"
+                />
+              </div>
+              
+              {/* Preview */}
+              {(previewUrl || formData.imageUrl) && (
+                <div className="cyber-border rounded-lg p-2 cyber-glow">
+                  <img 
+                    src={previewUrl || formData.imageUrl} 
+                    alt="معاينة الصورة"
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <p className="text-xs text-green-400 mt-2 font-mono text-center">
+                    {"✓ [OK] تم رفع الصورة"}
+                  </p>
+                </div>
+              )}
+              
+              {/* URL input as fallback */}
+              <div className="border-t border-purple-500/30 pt-3">
+                <Input
+                  value={formData.imageUrl.startsWith('data:') ? '' : formData.imageUrl}
+                  onChange={(e) => {
+                    setFormData({ ...formData, imageUrl: e.target.value });
+                    setPreviewUrl('');
+                    setSelectedFile(null);
+                  }}
+                  placeholder=">> أو ضع رابط صورة مباشر..."
+                  className="bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono text-sm"
+                />
+              </div>
+              
+              <p className="text-xs text-gray-400 font-mono">
+                {">> ارفع صورة من جهازك أو ضع رابط مباشر"}
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-between space-x-4 space-x-reverse pt-4">
+          <div className="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4 sm:space-x-reverse pt-6 border-t border-purple-500/30">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              className="border-gray-600 text-gray-400 hover:bg-gray-600"
+              className="cyber-border bg-gray-900/50 text-gray-400 hover:text-white hover-cyber font-mono"
             >
-              إلغاء
+              {"[ESC] إلغاء"}
             </Button>
             <Button
               type="submit"
               disabled={createPersonMutation.isPending}
-              className="bg-gradient-to-r from-[#00D9FF] to-[#FF0080] text-white font-bold hover:opacity-90"
+              className="cyber-border bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-bold hover-cyber font-mono tracking-wide"
             >
-              {createPersonMutation.isPending ? "جاري الإضافة..." : "إضافة الشخص 🚀"}
+              {createPersonMutation.isPending ? "[...] جاري الإضافة" : "[+] إضافة الهدف"}
             </Button>
           </div>
         </form>

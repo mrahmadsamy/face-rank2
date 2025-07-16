@@ -15,9 +15,6 @@ export default function FaceMash() {
   const { data: comparison, isLoading, refetch } = useQuery({
     queryKey: ['/api/facemash/comparison'],
     queryFn: api.getFaceMashComparison,
-    onSuccess: (data) => {
-      setCurrentComparison(data);
-    },
   });
 
   const compareMutation = useMutation({
@@ -51,23 +48,23 @@ export default function FaceMash() {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl text-[#FF0080] animate-pulse-neon mb-4">
-            <Flame className="inline mr-4" size={48} />
-            FaceMash Mode
+          <div className="text-2xl md:text-4xl text-purple-400 animate-pulse mb-4 font-mono">
+            <Flame className="inline mr-2 md:mr-4" size={32} />
+            {"[LOADING] FaceMash Mode"}
           </div>
-          <p className="text-xl text-gray-300">جاري تحضير المقارنة... 🔄</p>
+          <p className="text-base md:text-xl text-gray-300 font-mono">{">> جاري تحضير المقارنة..."}</p>
         </div>
       </div>
     );
   }
 
-  if (!comparison) {
+  if (!comparison || !comparison.person1 || !comparison.person2) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl text-red-400 mb-4">😞</div>
-          <p className="text-xl text-gray-300 mb-4">لا توجد أشخاص كافية للمقارنة</p>
-          <p className="text-gray-400">تحتاج على الأقل شخصين لبدء المقارنات</p>
+          <div className="text-2xl md:text-4xl text-red-400 mb-4 font-mono">[ERROR]</div>
+          <p className="text-base md:text-xl text-gray-300 mb-4 font-mono">{">> لا توجد أهداف كافية للمقارنة"}</p>
+          <p className="text-gray-400 font-mono">{"تحتاج على الأقل هدفين لبدء المعركة"}</p>
         </div>
       </div>
     );
@@ -76,17 +73,17 @@ export default function FaceMash() {
   return (
     <div className="pt-20 pb-12 min-h-screen">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="font-black text-4xl md:text-6xl font-bold mb-8 text-[#FF0080] animate-pulse-neon" dir="rtl">
-          <Flame className="inline mr-4" size={48} />
-          FaceMash Mode
+        <h2 className="font-black text-2xl md:text-6xl font-bold mb-6 md:mb-8 gradient-cyber font-mono" dir="rtl">
+          <Flame className="inline mr-2 md:mr-4" size={32} />
+          {"[BATTLE] FaceMash Mode"}
         </h2>
-        <p className="text-xl mb-8 text-gray-300" dir="rtl">
-          مين فيهم أروش؟ اختار بسرعة! 🔥
+        <p className="text-sm md:text-xl mb-6 md:mb-8 text-gray-300 font-mono" dir="rtl">
+          {">> مين فيهم أقوى؟ اختار بسرعة!"}
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
           {/* Person 1 */}
-          <div className="neon-border rounded-xl overflow-hidden hover-glow cursor-pointer transition-all duration-300 group">
+          <div className="cyber-card rounded-lg overflow-hidden hover-cyber cursor-pointer transition-all duration-300 group">
             <div 
               onClick={() => handleChoice(comparison.person1.id, comparison.person2.id)}
               className="cursor-pointer"
@@ -94,25 +91,25 @@ export default function FaceMash() {
               <img 
                 src={comparison.person1.imageUrl} 
                 alt={comparison.person1.name}
-                className="w-full h-80 object-cover"
+                className="w-full h-60 md:h-80 object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(comparison.person1.name)}&background=1a1a1a&color=00d9ff&size=400`;
                 }}
               />
-              <div className="p-6">
-                <h3 className="font-bold text-xl mb-2">{comparison.person1.name}</h3>
+              <div className="p-4 md:p-6">
+                <h3 className="font-bold text-lg md:text-xl mb-2 font-mono text-cyan-400">{comparison.person1.name}</h3>
                 <div className="flex justify-center space-x-1 space-x-reverse mb-4">
-                  <StarRating rating={comparison.person1.averageRating || 0} readonly size={20} />
-                  <span className="text-sm font-bold mr-2">
+                  <StarRating rating={comparison.person1.averageRating || 0} readonly size={18} />
+                  <span className="text-sm font-bold mr-2 font-mono">
                     {(comparison.person1.averageRating || 0).toFixed(1)}
                   </span>
                 </div>
                 <Button 
                   onClick={() => handleChoice(comparison.person1.id, comparison.person2.id)}
                   disabled={compareMutation.isPending}
-                  className="w-full py-3 bg-[#00D9FF]/20 text-[#00D9FF] rounded-lg font-bold hover:bg-[#00D9FF]/40 transition-all duration-300 border border-[#00D9FF]/50"
+                  className="w-full py-2 md:py-3 cyber-border bg-cyan-600/20 text-cyan-400 rounded-lg font-bold hover-cyber transition-all duration-300 font-mono"
                 >
-                  اختار هذا الوش 👈
+                  {"[SELECT] اختار هذا"}
                 </Button>
               </div>
             </div>

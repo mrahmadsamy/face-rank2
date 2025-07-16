@@ -27,7 +27,7 @@ export default function PersonCard({ person, onClick }: PersonCardProps) {
         <img 
           src={person.imageUrl} 
           alt={person.name}
-          className="w-full h-48 object-cover"
+          className="w-full h-40 md:h-48 object-cover transition-all duration-300 group-hover:scale-105"
           onError={(e) => {
             e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(person.name)}&background=1a1a1a&color=00d9ff&size=400`;
           }}
@@ -41,22 +41,22 @@ export default function PersonCard({ person, onClick }: PersonCardProps) {
         </div>
       </div>
       
-      <div className="p-4 bg-gray-900/50">
-        <h3 className="font-bold text-lg mb-1 text-white font-mono tracking-wide">{person.name}</h3>
-        <p className="text-gray-400 text-sm mb-3 line-clamp-2 font-mono">{person.description}</p>
+      <div className="p-3 md:p-4 bg-gray-900/50">
+        <h3 className="font-bold text-base md:text-lg mb-1 text-white font-mono tracking-wide truncate">{person.name}</h3>
+        <p className="text-gray-400 text-xs md:text-sm mb-3 line-clamp-2 font-mono">{person.description}</p>
         
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 space-x-reverse text-sm font-mono">
+          <div className="flex items-center space-x-3 md:space-x-4 space-x-reverse text-xs md:text-sm font-mono">
             <span className="flex items-center text-cyan-400">
-              <MessageCircle className="mr-1" size={14} />
+              <MessageCircle className="mr-1" size={12} />
               {person.totalComments || 0}
             </span>
-            <span className="flex items-center text-magenta-400">
-              <Eye className="mr-1" size={14} />
+            <span className="flex items-center text-purple-400">
+              <Eye className="mr-1" size={12} />
               {(person.totalViews || 0) > 999 ? `${((person.totalViews || 0) / 1000).toFixed(1)}k` : person.totalViews || 0}
             </span>
           </div>
-          <button className="text-green-400 hover:text-green-300 transition-colors font-mono font-bold">
+          <button className="text-green-400 hover:text-green-300 transition-colors font-mono font-bold text-sm">
             {">>"}
           </button>
         </div>

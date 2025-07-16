@@ -29,46 +29,42 @@ export default function Home() {
     person.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getSortButtonClass = (value: string) => 
-    `px-3 py-1 rounded text-sm border transition-colors ${
-      sortBy === value
-        ? "bg-[#00D9FF]/20 text-[#00D9FF] border-[#00D9FF]/50"
-        : "bg-transparent text-gray-400 border-gray-600 hover:border-[#FF0080]"
-    }`;
+
 
   return (
     <div className="pt-20 pb-12">
       {/* Hero Section */}
-      <section className="pb-12 text-center">
+      <section className="pb-8 md:pb-12 text-center">
         <div className="container mx-auto px-4">
           <div className="animate-float">
-            <h1 className="font-black text-responsive-lg md:text-7xl mb-6" dir="rtl">
-              <span className="text-[#00D9FF]">تقيّمني؟!</span><br />
-              <span className="text-[#FF0080] animate-pulse-neon">استنى بس... دورك جيه!</span>
+            <h1 className="font-black text-4xl md:text-7xl mb-6 font-mono" dir="rtl">
+              <span className="gradient-cyber block">{">> SYSTEM LOADED"}</span>
+              <span className="text-cyan-400 text-2xl md:text-4xl mt-2 block">نظام تقييم الأهداف</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed" dir="rtl">
-              🎯 المنصة الوحيدة اللي تقدر تقيم فيها أي حد وتشوف رأي الناس فيه!
-              <br />من الخنزير 🐷 للإمبراطور 👑
+            <p className="text-lg md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed font-mono" dir="rtl">
+              {">> منصة تقييم متطورة لتحليل الشخصيات"}
+              <br />
+              <span className="text-purple-400">{"من [FAIL] إلى [SUCCESS]"}</span>
             </p>
             
             {/* Statistics Counter */}
             {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-12 max-w-4xl mx-auto">
-                <div className="neon-border rounded-xl p-6 text-center hover-glow">
-                  <div className="text-3xl font-bold text-[#00D9FF]">{stats.totalPeople.toLocaleString()}</div>
-                  <div className="text-sm text-gray-400">أشخاص متقيمين</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mt-8 md:mt-12 max-w-4xl mx-auto">
+                <div className="cyber-card rounded-lg p-3 md:p-6 text-center hover-cyber">
+                  <div className="text-2xl md:text-3xl font-bold text-cyan-400 font-mono">{stats.totalPeople.toLocaleString()}</div>
+                  <div className="text-xs md:text-sm text-gray-400 font-mono">[TARGETS]</div>
                 </div>
-                <div className="neon-border rounded-xl p-6 text-center hover-glow">
-                  <div className="text-3xl font-bold text-[#FF0080]">{stats.totalRatings.toLocaleString()}</div>
-                  <div className="text-sm text-gray-400">تقييم حار</div>
+                <div className="cyber-card rounded-lg p-3 md:p-6 text-center hover-cyber">
+                  <div className="text-2xl md:text-3xl font-bold text-purple-400 font-mono">{stats.totalRatings.toLocaleString()}</div>
+                  <div className="text-xs md:text-sm text-gray-400 font-mono">[RATINGS]</div>
                 </div>
-                <div className="neon-border rounded-xl p-6 text-center hover-glow">
-                  <div className="text-3xl font-bold text-[#39FF14]">{stats.totalComments.toLocaleString()}</div>
-                  <div className="text-sm text-gray-400">تعليق ساخر</div>
+                <div className="cyber-card rounded-lg p-3 md:p-6 text-center hover-cyber">
+                  <div className="text-2xl md:text-3xl font-bold text-green-400 font-mono">{stats.totalComments.toLocaleString()}</div>
+                  <div className="text-xs md:text-sm text-gray-400 font-mono">[COMMENTS]</div>
                 </div>
-                <div className="neon-border rounded-xl p-6 text-center hover-glow">
-                  <div className="text-3xl font-bold text-yellow-400">{stats.onlineUsers}</div>
-                  <div className="text-sm text-gray-400">متصل حالياً</div>
+                <div className="cyber-card rounded-lg p-3 md:p-6 text-center hover-cyber">
+                  <div className="text-2xl md:text-3xl font-bold text-yellow-400 font-mono">{stats.onlineUsers}</div>
+                  <div className="text-xs md:text-sm text-gray-400 font-mono">[ONLINE]</div>
                 </div>
               </div>
             )}
@@ -76,71 +72,102 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4">
-        {/* Filter and Search Section */}
-        <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between" dir="rtl">
-          <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="relative">
+      {/* Search and Filter Section */}
+      <section className="py-6 md:py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-400" size={18} />
               <Input
-                type="text"
-                placeholder="ابحث عن شخص..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-[#1a1a1a] border-2 border-[#00D9FF]/30 rounded-lg px-4 py-2 pl-10 focus:border-[#00D9FF] focus:outline-none focus:ring-2 focus:ring-[#00D9FF]/50 transition-all duration-300 text-white"
+                placeholder=">> ابحث عن هدف..."
+                className="pl-10 bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono text-sm"
               />
-              <Search className="absolute left-3 top-3 text-[#00D9FF]/70" size={16} />
             </div>
             
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-[#1a1a1a] border-2 border-[#FF0080]/30 rounded-lg focus:border-[#FF0080] focus:outline-none text-white">
-                <SelectValue placeholder="كل الفئات" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1a1a1a] border-[#FF0080]/30 text-white">
-                <SelectItem value="all">كل الفئات</SelectItem>
-                <SelectItem value="teacher">👨‍🏫 أساتذة</SelectItem>
-                <SelectItem value="student">🎓 طلاب</SelectItem>
-                <SelectItem value="employee">💼 موظفين</SelectItem>
-                <SelectItem value="celebrity">⭐ مشاهير</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3 md:gap-4">
+              <Filter className="text-purple-400" size={18} />
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-full md:w-40 bg-gray-900/50 border-purple-500/30 focus:border-cyan-400 text-white font-mono text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="cyber-card border-purple-500/50 text-white font-mono">
+                  <SelectItem value="all">[ALL] كل الفئات</SelectItem>
+                  <SelectItem value="teacher">[EDU] أساتذة</SelectItem>
+                  <SelectItem value="student">[STD] طلاب</SelectItem>
+                  <SelectItem value="employee">[EMP] موظفين</SelectItem>
+                  <SelectItem value="celebrity">[VIP] مشاهير</SelectItem>
+                  <SelectItem value="other">[???] أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-2 space-x-reverse">
-            <span className="text-gray-400">ترتيب حسب:</span>
-            <button 
+
+          {/* Sort Options */}
+          <div className="flex flex-wrap gap-2 md:gap-3 mb-6 md:mb-8 justify-center">
+            <span className="text-cyan-400 font-bold font-mono text-sm md:text-base">[SORT]:</span>
+            <button
               onClick={() => setSortBy("averageRating")}
-              className={getSortButtonClass("averageRating")}
+              className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm border transition-colors font-mono ${
+                sortBy === "averageRating"
+                  ? "bg-cyan-400/20 text-cyan-400 border-cyan-400/50 cyber-glow"
+                  : "bg-transparent text-gray-400 border-gray-600 hover:border-purple-400"
+              }`}
             >
-              الأعلى تقييماً
+              [★] أعلى
             </button>
-            <button 
-              onClick={() => setSortBy("newest")}
-              className={getSortButtonClass("newest")}
+            <button
+              onClick={() => setSortBy("totalRatings")}
+              className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm border transition-colors font-mono ${
+                sortBy === "totalRatings"
+                  ? "bg-purple-400/20 text-purple-400 border-purple-400/50 cyber-glow"
+                  : "bg-transparent text-gray-400 border-gray-600 hover:border-purple-400"
+              }`}
             >
-              الأحدث
+              [🔥] أكثر
             </button>
-            <button 
-              onClick={() => setSortBy("mostComments")}
-              className={getSortButtonClass("mostComments")}
+            <button
+              onClick={() => setSortBy("totalComments")}
+              className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm border transition-colors font-mono ${
+                sortBy === "totalComments"
+                  ? "bg-green-400/20 text-green-400 border-green-400/50 cyber-glow"
+                  : "bg-transparent text-gray-400 border-gray-600 hover:border-purple-400"
+              }`}
             >
-              الأكثر تفاعلاً
+              [💬] تفاعل
+            </button>
+            <button
+              onClick={() => setSortBy("totalViews")}
+              className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm border transition-colors font-mono ${
+                sortBy === "totalViews"
+                  ? "bg-yellow-400/20 text-yellow-400 border-yellow-400/50 cyber-glow"
+                  : "bg-transparent text-gray-400 border-gray-600 hover:border-purple-400"
+              }`}
+            >
+              [👁] مشاهدة
             </button>
           </div>
         </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4">
 
         {/* People Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="text-2xl text-[#00D9FF] animate-pulse-neon">جاري التحميل... 🔄</div>
+            <div className="text-xl md:text-2xl text-cyan-400 animate-pulse font-mono">
+              {"[...] جاري تحميل الأهداف"}
+            </div>
           </div>
         ) : filteredPeople.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-2xl text-gray-400 mb-4">لا توجد نتائج</div>
-            <p className="text-gray-500">جرب البحث بكلمات مختلفة أو غير الفئة</p>
+            <div className="text-xl md:text-2xl text-red-400 mb-4 font-mono">[404] لا توجد أهداف</div>
+            <p className="text-gray-400 font-mono">{">> جرب البحث بكلمات مختلفة أو غير الفئة"}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {filteredPeople.map((person: Person) => (
               <PersonCard
                 key={person.id}
